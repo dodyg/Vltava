@@ -8,6 +8,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Reference Include="LiteDb" Version="3.1.*"/>
   </ItemGroup>
 
   <ItemGroup>
