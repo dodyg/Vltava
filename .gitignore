@@ -1,0 +1,9 @@
+[Oo]bj/
+[Bb]in/
+
+project.lock.json
+
+*.user
+*.suo
+*.cache
+*.docstates
