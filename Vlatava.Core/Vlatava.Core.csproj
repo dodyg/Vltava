@@ -8,15 +8,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Reference Include="LiteDb" Version="3.1.*"/>
-  </ItemGroup>
-
-  <ItemGroup>
-    <Reference Include="System" />
-    <Reference Include="Microsoft.CSharp" />
-  </ItemGroup>
-
-  <ItemGroup>
+    <PackageReference Include="Microsoft.SyndicationFeed" Version="1.0.0-preview" />
   </ItemGroup>
 
 </Project>
