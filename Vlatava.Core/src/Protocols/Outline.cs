@@ -7,7 +7,12 @@ namespace Vlatava.Core.Protocols
 {
     public class Outline
     {
-        public Dictionary<string, string> Attributes { get; private set; }
+        public Dictionary<string, string> Attributes { get; set; }
+
+        public string this[string key] => Attributes.ContainsKey(key) ? Attributes[key] : null;
+
+        public string Text => this["text"];
+
         public Outline()
         {
             Attributes = new Dictionary<string, string>();
