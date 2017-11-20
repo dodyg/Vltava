@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
-using Vlatava.Core.Protocols;
+using Vltava.Core.Protocols;
 using System.Collections.Generic;
 using System.Text;
 using System;
@@ -8,7 +8,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Configuration;
 using Microsoft.AspNetCore.Http;
 
-namespace Vlatava.Web
+namespace Vltava.Web
 {
     public class Startup
     {

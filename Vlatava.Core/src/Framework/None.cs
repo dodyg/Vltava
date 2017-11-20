@@ -1,6 +1,6 @@
 using System;
 
-namespace Vlatava.Core.Framework
+namespace Vltava.Core.Framework
 {
     /// <summary>
     /// This structure to indicates no value (to be used with generics). We need to resort to this because System.Void does not work.

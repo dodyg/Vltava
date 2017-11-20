@@ -3,9 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Xml.Linq;
-using Vlatava.Core.Framework;
+using Vltava.Core.Framework;
 
-namespace Vlatava.Core.Protocols
+namespace Vltava.Core.Protocols
 {
     public class Opml
     {

@@ -6,7 +6,7 @@ using System.Xml;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 
-namespace Vlatava.Core.Protocols
+namespace Vltava.Core.Protocols
 {
     public class ComplexSyndicationItem
     {

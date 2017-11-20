@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace Vlatava.Core.Framework
+namespace Vltava.Core.Framework
 {
     /// <summary>
     /// This is a simple return value structure to make passing return value easier.

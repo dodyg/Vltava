@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace Vlatava.Core.Protocols
+namespace Vltava.Core.Protocols
 {
     public class Outline
     {
