@@ -2,9 +2,9 @@
 
   <PropertyGroup>
     <TargetFramework>netcoreapp2.0</TargetFramework>
-    <AssemblyName>Vlatava.Core</AssemblyName>
+    <AssemblyName>Vltava.Core</AssemblyName>
     <OutputType>Library</OutputType>
-    <PackageId>Vlatava.Core</PackageId>
+    <PackageId>Vltava.Core</PackageId>
   </PropertyGroup>
 
   <ItemGroup>

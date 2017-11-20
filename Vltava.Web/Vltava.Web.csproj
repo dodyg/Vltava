@@ -2,9 +2,9 @@
 
   <PropertyGroup>
     <TargetFramework>netcoreapp2.0</TargetFramework>
-    <AssemblyName>Vlatava.Web</AssemblyName>
+    <AssemblyName>Vltava.Web</AssemblyName>
     <OutputType>Exe</OutputType>
-    <PackageId>Vlatava.Web</PackageId>
+    <PackageId>Vltava.Web</PackageId>
   </PropertyGroup>
 
   <ItemGroup>
@@ -17,7 +17,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Vlatava.Core\Vlatava.Core.csproj" />
+    <ProjectReference Include="..\Vltava.Core\Vltava.Core.csproj" />
   </ItemGroup>
 
 </Project>
