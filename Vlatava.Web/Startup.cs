@@ -6,11 +6,11 @@ using System.Text;
 using System;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Configuration;
+using Microsoft.AspNetCore.Http;
 
 namespace Vlatava.Web
 {
-
- public class Startup
+    public class Startup
     {
         public void Configure(IApplicationBuilder app, IHostingEnvironment env, ILoggerFactory logger, IConfiguration configuration)
         {
@@ -56,5 +56,4 @@ namespace Vlatava.Web
             });
         }
     }
-
 }

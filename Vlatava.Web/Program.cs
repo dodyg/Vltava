@@ -11,7 +11,7 @@ namespace Vlatava.Web
         {
             var host = new WebHostBuilder()
             .UseKestrel()
-            .Configure(app => app.Run(async context => await context.Response.WriteAsync("Hello World")))
+            .UseStartup<Startup>()
             .Build();
 
             host.Run();

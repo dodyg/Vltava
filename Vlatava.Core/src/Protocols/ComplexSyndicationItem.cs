@@ -29,7 +29,7 @@ namespace Vlatava.Core.Protocols
 
     public static class SyndicationReader
     {
-        public static async Task<ComplexSyndicationItem> Get(Uri url)
+        public static async Task<List<ComplexSyndicationItem>> Get(Uri url)
         {
             var parser = new RssParser();
             var items = new List<ComplexSyndicationItem>();
