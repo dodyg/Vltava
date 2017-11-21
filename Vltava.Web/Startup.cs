@@ -23,6 +23,8 @@ namespace Vltava.Web
                     var items = await SyndicationReader.Get(
                         new Uri("http://scripting.com/rss.xml"), 
                         new Uri("http://rss.nytimes.com/services/xml/rss/nyt/HomePage.xml"));
+
+                    SyndicationReader.SyndicationItemStream.Subscribe(x => Console.WriteLine(x.Item.Title));
                     
                     var str = new StringBuilder();
                     str.Append("<ul>");

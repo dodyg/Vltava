@@ -9,6 +9,7 @@ using System.Net.Http;
 using System.IO;
 using System.Text;
 using System.Reactive.Linq;
+using System.Reactive.Subjects;
 
 namespace Vltava.Core.Protocols
 {
@@ -41,7 +42,6 @@ namespace Vltava.Core.Protocols
 
         public static List<ComplexSyndication> GetObservable(params Uri[] url)
         {
-            
             var httpClient = HttpClientFactory.Get();
 
             var feeds = url.ToObservable()
@@ -91,6 +91,9 @@ namespace Vltava.Core.Protocols
             return syndications;
         }
 
+        static ReplaySubject<ComplexSyndicationItem> Replay = new ReplaySubject<ComplexSyndicationItem>();
+        public static IObservable<ComplexSyndicationItem> SyndicationItemStream => Replay;
+
         public static async Task<List<ComplexSyndication>> Get(params Uri[] url)
         {
             var parser = new RssParser();
@@ -132,7 +135,9 @@ namespace Vltava.Core.Protocols
                                 ISyndicationItem item = parser.CreateItem(content);
                                 ISyndicationContent outline = content.Fields.FirstOrDefault(f => f.Name == "source:outline");
 
-                                syndication.Items.Add(new ComplexSyndicationItem(item, outline));
+                                var i = new ComplexSyndicationItem(item, outline);
+                                Replay.OnNext(i);
+                                syndication.Items.Add(i);
                                 break;
                             default:
                                 break;
@@ -142,6 +147,8 @@ namespace Vltava.Core.Protocols
                     syndications.Add(syndication);
                 }
             }
+
+            Replay.OnCompleted();
 
             return syndications;
         }
