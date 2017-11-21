@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Net.Http;
 using System.IO;
 using System.Text;
+using System.Reactive.Linq;
 
 namespace Vltava.Core.Protocols
 {
@@ -37,6 +38,59 @@ namespace Vltava.Core.Protocols
 
     public static class SyndicationReader
     {
+
+        public static List<ComplexSyndication> GetObservable(params Uri[] url)
+        {
+            
+            var httpClient = HttpClientFactory.Get();
+
+            var feeds = url.ToObservable()
+            .Select(u => Observable.FromAsync(() => httpClient.GetAsync(u)))
+            .Merge(2);
+
+            var syndications = new List<ComplexSyndication>();
+            var parser = new RssParser();
+            feeds.Subscribe(async msg =>
+            {
+                var resultContent = await msg.Content.ReadAsStringAsync();
+
+                using (var xmlReader = XmlReader.Create(new MemoryStream(Encoding.UTF8.GetBytes(resultContent))))
+                {
+                    var feedReader = new RssFeedReader(xmlReader);
+
+                    var syndication = new ComplexSyndication();
+
+                    while (await feedReader.Read())
+                    {
+
+                        switch (feedReader.ElementType)
+                        {
+                            case SyndicationElementType.Item:
+                                //ISyndicationContent is a raw representation of the feed
+                                ISyndicationContent content = await feedReader.ReadContent();
+
+                                ISyndicationItem item = parser.CreateItem(content);
+                                ISyndicationContent outline = content.Fields.FirstOrDefault(f => f.Name == "source:outline");
+
+                                syndication.Items.Add(new ComplexSyndicationItem(item, outline));
+                                break;
+                            default:
+                                break;
+                        }
+                    }
+
+                    syndications.Add(syndication);
+                }
+            }, ex => {
+
+            },
+            () => {
+
+            });
+
+            return syndications;
+        }
+
         public static async Task<List<ComplexSyndication>> Get(params Uri[] url)
         {
             var parser = new RssParser();
