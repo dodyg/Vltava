@@ -22,4 +22,8 @@
     <ProjectReference Include="..\Vltava.Core\Vltava.Core.csproj" />
   </ItemGroup>
 
+  <ItemGroup Condition="'$(Configuration)' == 'Debug'">
+    <None Update="Subscriptions\*" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
 </Project>

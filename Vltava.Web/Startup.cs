@@ -8,6 +8,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Configuration;
 using Microsoft.AspNetCore.Http;
 using System.Linq;
+using System.IO;
 
 namespace Vltava.Web
 {
@@ -20,9 +21,20 @@ namespace Vltava.Web
             {
                 try
                 {
-                    var items = await SyndicationReader.Get(
-                        new Uri("http://scripting.com/rss.xml"), 
-                        new Uri("http://rss.nytimes.com/services/xml/rss/nyt/HomePage.xml"));
+                    var fileLocation = Path.Combine(env.ContentRootPath, "Subscriptions", "tech.opml");
+                    var subscription = await File.ReadAllTextAsync(fileLocation);
+                    var opml = Opml.Parse(subscription);
+
+                    if (opml.IsFalse)
+                    {
+                        await context.Response.WriteAsync("Error in loading");
+                        return;
+                    }
+
+                    var outlines = opml.Value.Find("type", "rss");
+                    var urls = outlines.Where(o => o.Attributes.ContainsKey("url")).Select(o => new Uri(o["url"]));
+
+                    var items = await SyndicationReader.Get(urls.ToArray());
 
                     SyndicationReader.SyndicationItemStream.Subscribe(x => Console.WriteLine(x.Item.Title));
                     

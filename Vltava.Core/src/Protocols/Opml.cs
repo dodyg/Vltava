@@ -29,6 +29,20 @@ namespace Vltava.Core.Protocols
             Outlines = new List<Outline>();
         }
 
+        public static Result<Opml> Parse(string xml)
+        {
+            if (string.IsNullOrWhiteSpace(xml))
+                throw new ArgumentNullException($"{nameof(xml)} is null");
+
+            var opml = new Opml();
+            var res = opml.LoadFromXML(xml);
+
+            if (res.IsTrue)
+                return Result<Opml>.True(opml);
+            else
+                return Result<Opml>.False(res.ExceptionObject);
+        }
+
         public Result<None> LoadFromXML(string xml)
         {
             try
@@ -36,25 +50,17 @@ namespace Vltava.Core.Protocols
                 var elements = XElement.Parse(xml);
                 var heads = elements.Element("head").Descendants();
 
-                Func<string, string> selectString = (filter) =>
-                    {
-                        return heads.Where(x => x.Name == filter).Select(x => x.Value).FirstOrDefault();
-                    };
+                string selectString(string filter) =>
+                    heads.Where(x => x.Name == filter).Select(x => x.Value).FirstOrDefault();
 
-                Func<string, int?> selectInt = (filter) =>
-                {
-                    return heads.Where(x => x.Name == filter).Select(x => Convert.ToInt32(x.Value)).FirstOrDefault();
-                };
+                int? selectInt(string filter) =>
+                    heads.Where(x => x.Name == filter).Select(x => Convert.ToInt32(x.Value)).FirstOrDefault();
 
-                Func<string, DateTime?> selectDate = (filter) =>
-                {
-                    return heads.Where(x => x.Name == filter).Select(x => Convert.ToDateTime(x.Value)).FirstOrDefault();
-                };
+                DateTime? selectDate(string filter)  => 
+                    heads.Where(x => x.Name == filter).Select(x => Convert.ToDateTime(x.Value)).FirstOrDefault();
 
-                Func<string, Uri> selectUri = (filter) =>
-                {
-                    return heads.Where(x => x.Name == filter).Select(x => new Uri(x.Value)).FirstOrDefault();
-                };
+                Uri selectUri(string filter) =>
+                    heads.Where(x => x.Name == filter).Select(x => new Uri(x.Value)).FirstOrDefault();
 
                 Title = selectString("title");
                 DateCreated = selectDate("dateCreated");
@@ -87,6 +93,30 @@ namespace Vltava.Core.Protocols
             }
         }
 
+        public List<Outline> Find(string attributeName, string attributeValue)
+        {
+            if (string.IsNullOrWhiteSpace(attributeName))
+                throw new ArgumentNullException($"{nameof(attributeName)}");
+                
+            var list = new List<Outline>();
+
+            IEnumerable<Outline> Find2(Outline o) 
+            {
+                if (o.Attributes.ContainsKey(attributeName) && o.Attributes[attributeName] == attributeValue)
+                    yield return o;
+
+                foreach(var oo in o.Outlines)
+                    foreach(var ooo in Find2(oo))
+                        yield return ooo;
+            }
+
+            foreach(var o in Outlines)
+                foreach(var m in Find2(o))
+                    list.Add(m);
+
+            return list;                
+        }
+
         private void TraverseBody(XElement outline, Outline ot)
         {
             if (outline != null)
@@ -112,12 +142,12 @@ namespace Vltava.Core.Protocols
                         new XElement("title", this.Title),
                         (this.DateCreated.HasValue) ? new XElement("dateCreated", this.DateCreated.Value.ToString("R")) : null,
                         (this.DateModified.HasValue) ? new XElement("dateModified", this.DateModified.Value.ToString("R")) : null,
-                        (!string.IsNullOrWhiteSpace(this.OwnerName))? new XElement("ownerName", this.OwnerName) : null,
+                        (!string.IsNullOrWhiteSpace(this.OwnerName)) ? new XElement("ownerName", this.OwnerName) : null,
                         (!string.IsNullOrWhiteSpace(this.OwnerEmail)) ? new XElement("ownerEmail", this.OwnerEmail) : null
                         ));
-                      
+
             var body = new XElement("body");
-            foreach(var x in this.Outlines)
+            foreach (var x in this.Outlines)
             {
                 XElement newOutline = new XElement("outline");
                 AddRecursiveChild(newOutline, x);
@@ -129,15 +159,16 @@ namespace Vltava.Core.Protocols
             return root;
         }
 
-        private void AddRecursiveChild(XElement element, Outline o){
-            
+        private void AddRecursiveChild(XElement element, Outline o)
+        {
+
             element.Add(from y in o.Attributes
                         select new XAttribute(y.Key, y.Value));
-            
-            foreach(var oo in o.Outlines)
+
+            foreach (var oo in o.Outlines)
             {
                 XElement newOutline = new XElement("outline");
-            
+
                 element.Add(newOutline);
                 AddRecursiveChild(newOutline, oo);
             }
