@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using Scriban;
 using Vltava.Core.Protocols;
+using System.Linq;
 
 namespace Vltava.Core.Features
 {
@@ -14,7 +15,7 @@ namespace Vltava.Core.Features
                 
             var tmp = Template.Parse(template);
             
-            var result = tmp.Render(new { syndications = syndications });
+            var result = tmp.Render(new { syndications = syndications.SelectMany(x => x.Items).OrderByDescending(x => x.Item.Published) });
 
             return result;
         }

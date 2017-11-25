@@ -1,14 +1,23 @@
-   <html>
-    <head>
-        <link rel=""stylesheet"" type=""text/css"" href=""http://fonts.googleapis.com/css?family=Germania+One"">
-        <style>
-        body {
-            font-family: 'Germania One', serif;
-            font-size: 24px;
-        }
-        </style>
-    </head>
-    <body>
-        Hello world
-    </body>
+<html>
+<head>
+    <link rel=""stylesheet"" type=""text/css"" href=""http://fonts.googleapis.com/css?family=Germania+One"">
+    <style>
+    body {
+        font-family: 'Germania One', serif;
+        font-size: 24px;
+    }
+    </style>
+</head>
+<body>
+    <ul>
+    {{ for x in syndications}}
+        <li><strong>{{x.item.title}}</strong>
+            <a href="{{x.item.links[0].uri}}">#</a>
+            <br/>
+            {{x.item.description}}<br/>
+            {{x.item.published}}
+        </li>
+    {{ end }}
+    </ul>
+</body>
 </html>
