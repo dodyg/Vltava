@@ -8,6 +8,7 @@
                 <outline>
                     <outline>
                         <outline text="Scripting" url="http://scripting.com/rss.xml" type="rss" />
+                        <outline text="The Morning Paper" url="https://blog.acolyer.org/feed/" type="rss" />
                     </outline>
                 </outline>
             </outline>

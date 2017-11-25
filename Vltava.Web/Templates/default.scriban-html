@@ -10,11 +10,17 @@
 </head>
 <body>
     <ul>
-    {{ for x in syndications}}
-        <li><strong>{{x.item.title}}</strong>
-            <a href="{{x.item.links[0].uri}}">#</a>
+    {{ for x in syndications }}
+        <li>
+            {{ if x.item.title != null }}
+                <strong>{{x.item.title}}</strong>
+                <a href="{{x.item.links[0].uri}}">#</a>
+                <br/>
+            {{ end }}
+
+            {{x.item.description}}
+            {{ if x.item.title != null }}<a href="{{x.item.links[0].uri}}">#</a>{{ end }}    
             <br/>
-            {{x.item.description}}<br/>
             {{x.item.published}}
         </li>
     {{ end }}
