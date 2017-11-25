@@ -19,7 +19,7 @@
             {{ end }}
 
             {{x.item.description}}
-            {{ if x.item.title != null }}<a href="{{x.item.links[0].uri}}">#</a>{{ end }}    
+            {{ if x.item.title == null }}<a href="{{x.item.links[0].uri}}">#</a>{{ end }}    
             <br/>
             {{x.item.published}}
         </li>
