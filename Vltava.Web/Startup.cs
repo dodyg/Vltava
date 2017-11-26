@@ -15,6 +15,7 @@ using Optional;
 using Optional.Unsafe;
 using Vltava.Core.Features;
 using System.Threading.Tasks.Dataflow;
+using System.Threading.Tasks;
 
 namespace Vltava.Web
 {
@@ -31,6 +32,8 @@ namespace Vltava.Web
 
             var opmlReading = new TransformBlock<string, string>(async fileName =>
                               {
+                                  System.Console.WriteLine("OPML READING");
+
                                   var subscriptionListFile = sysFolders.SubscriptionsFile(fileName);
                                   if (!subscriptionListFile.HasValue)
                                       throw new ArgumentException($"{subscriptionListFile} does not exist");
@@ -66,6 +69,7 @@ namespace Vltava.Web
 
             var template = new TransformBlock<string, string>(async filename =>
             {
+                System.Console.WriteLine("Template Processing");
                 var templateFile = sysFolders.TemplateFile(filename);
                 if (!templateFile.HasValue)
                     throw new ArgumentException($"{templateFile} does not exist");
@@ -81,6 +85,29 @@ namespace Vltava.Web
                return r.Render(input.Item1, input.Item2);
            });
 
+            opmlReading.LinkTo(opmlParsing);
+            opmlParsing.LinkTo(syndicationSourceUrls);
+            syndicationSourceUrls.LinkTo(syndications);
+
+            var join = new JoinBlock<string, List<ComplexSyndication>>();
+            template.LinkTo(join.Target1);
+            syndications.LinkTo(join.Target2);
+            join.LinkTo(output);
+
+            opmlReading.Completion.ContinueWith(t => 
+                opmlParsing.Complete());
+
+            opmlParsing.Completion.ContinueWith(t => 
+                syndicationSourceUrls.Complete());
+
+            syndicationSourceUrls.Completion.ContinueWith(t =>
+                syndications.Complete());
+
+            Task.WhenAll(syndications.Completion, template.Completion)
+                .ContinueWith(t => join.Complete());
+
+            join.Completion.ContinueWith(t => 
+                output.Complete());
 
             //These are the four default services available at Configure
             app.Run(async context =>
@@ -93,15 +120,9 @@ namespace Vltava.Web
                         await context.Response.WriteAsync(input);
                     });
 
-                    opmlReading.LinkTo(opmlParsing);
-                    opmlParsing.LinkTo(syndicationSourceUrls);
-                    syndicationSourceUrls.LinkTo(syndications);
-
-                    var join = new JoinBlock<string, List<ComplexSyndication>>();
-                    template.LinkTo(join.Target1);
-                    syndications.LinkTo(join.Target2);
-                    join.LinkTo(output);
                     output.LinkTo(render);
+
+                    await output.Completion.ContinueWith(t => render.Complete());
 
                     template.Post("default.scriban-html");
                     opmlReading.Post("tech.opml");
