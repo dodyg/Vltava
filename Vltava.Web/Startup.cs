@@ -65,7 +65,7 @@ namespace Vltava.Web
                 return items;
             });
 
-            SyndicationReader.SyndicationItemStream.Subscribe(x => Console.WriteLine(x.Item.Title));
+            //SyndicationReader.SyndicationItemStream.Subscribe(x => Console.WriteLine(x.Item.Title));
 
             var template = new TransformBlock<string, string>(async filename =>
             {
@@ -121,12 +121,14 @@ namespace Vltava.Web
                     });
 
                     output.LinkTo(render);
-
-                    await output.Completion.ContinueWith(t => render.Complete());
+                    output.Completion.ContinueWith(t => render.Complete());
 
                     template.Post("default.scriban-html");
+                    template.Complete();
                     opmlReading.Post("tech.opml");
+                    opmlReading.Complete();
 
+                    await context.Response.WriteAsync("Hello world");
                     await render.Completion;
                 }
                 catch (Exception ex)
