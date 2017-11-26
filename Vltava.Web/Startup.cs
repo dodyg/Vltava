@@ -61,8 +61,20 @@ namespace Vltava.Web
 
             var syndications = new TransformBlock<List<Uri>, List<ComplexSyndication>>(async uris =>
             {
-                var items = await SyndicationReader.Get(uris.ToArray());
-                return items;
+                System.Console.WriteLine("Syndication Processing");
+                
+                try
+                {
+                    uris.ForEach(x => System.Console.WriteLine($"{x}"));
+
+                    var items = await SyndicationReader.Get(uris.ToArray());
+                    return items;
+                }
+                catch (Exception ex)
+                {
+                    System.Console.WriteLine($"{ex.Message} {ex.StackTrace}");
+                    return new List<ComplexSyndication>();
+                }
             });
 
             //SyndicationReader.SyndicationItemStream.Subscribe(x => Console.WriteLine(x.Item.Title));
@@ -80,7 +92,7 @@ namespace Vltava.Web
 
             var output = new TransformBlock<Tuple<string, List<ComplexSyndication>>, string>(input =>
            {
-               System.Console.WriteLine("Rendering");
+               System.Console.WriteLine("Rendering output");
                var r = new HtmlRender();
                return r.Render(input.Item1, input.Item2);
            });
@@ -94,20 +106,6 @@ namespace Vltava.Web
             syndications.LinkTo(join.Target2);
             join.LinkTo(output);
 
-            opmlReading.Completion.ContinueWith(t => 
-                opmlParsing.Complete());
-
-            opmlParsing.Completion.ContinueWith(t => 
-                syndicationSourceUrls.Complete());
-
-            syndicationSourceUrls.Completion.ContinueWith(t =>
-                syndications.Complete());
-
-            Task.WhenAll(syndications.Completion, template.Completion)
-                .ContinueWith(t => join.Complete());
-
-            join.Completion.ContinueWith(t => 
-                output.Complete());
 
             //These are the four default services available at Configure
             app.Run(async context =>
@@ -116,19 +114,21 @@ namespace Vltava.Web
                 {
                     var render = new ActionBlock<string>(async input =>
                     {
+                        System.Console.WriteLine("Writing to HTML");
                         context.Response.Headers.Add("Content-Type", "text/html");
-                        await context.Response.WriteAsync(input);
+                        await context.Response.WriteAsync("Good morning" + input);
                     });
 
                     output.LinkTo(render);
-                    output.Completion.ContinueWith(t => render.Complete());
 
                     template.Post("default.scriban-html");
                     template.Complete();
                     opmlReading.Post("tech.opml");
                     opmlReading.Complete();
 
-                    await context.Response.WriteAsync("Hello world");
+                    await Task.WhenAll(template.Completion, syndications.Completion);
+                    join.Complete();
+                    output.Complete();
                     await render.Completion;
                 }
                 catch (Exception ex)
