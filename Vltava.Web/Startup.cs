@@ -45,14 +45,10 @@ namespace Vltava.Web
                 try
                 {
                     //Load the rss listed at opml subscription file 
-                    var syndication = Option.None<List<ComplexSyndication>>();
-                    await (await RenderPipeline.OpmlReadingAsync(subscriptionListFile.ValueOrFailure())).Match(
+                    var syndication = await (await RenderPipeline.OpmlReadingAsync(subscriptionListFile.ValueOrFailure())).Match(
                         some : async opmlXml => await RenderPipeline.OpmlParsing(opmlXml).Match(
                             some : async opml => await RenderPipeline.GetSyndicationUri(opml).Match(
-                                some : async uris => (await RenderPipeline.ProcessSyndicationAsync(uris)).Match(
-                                    some : syndications => syndication = Option.Some(syndications),
-                                    none: x => throw x
-                                ), 
+                                some : async uris => (await RenderPipeline.ProcessSyndicationAsync(uris)), 
                                 none: x => throw x
                             ),
                              none: x => throw x
@@ -61,11 +57,9 @@ namespace Vltava.Web
                     );
 
                     //Read the template file and render the rss content
-                    var output = Option.None<string>();
-                    (await RenderPipeline.TemplateReadingAsync(opmlFile.ValueOrFailure())).MatchSome
-                        (template => RenderPipeline.Render((template, syndication.ValueOrFailure())).MatchSome(
-                            o => output = Option.Some(o)
-                        )
+                    var output = (await RenderPipeline.TemplateReadingAsync(opmlFile.ValueOrFailure())).Match(
+                        some : template => RenderPipeline.Render((template, syndication.ValueOrFailure())),
+                        none:  x => throw x
                     );
 
                     await output.Match(
@@ -73,9 +67,9 @@ namespace Vltava.Web
                             context.Response.Headers.Add("Content-Type", "text/html");
                             await context.Response.WriteAsync(doc);
                         },
-                        none: async () => {
+                        none: async (ex) => {
                             context.Response.Headers.Add("Content-Type", "text/html");
-                            await context.Response.WriteAsync("Error");
+                            await context.Response.WriteAsync($"{ex.Message}");
                         }
                     );
                 }
