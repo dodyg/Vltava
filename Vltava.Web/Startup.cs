@@ -44,6 +44,7 @@ namespace Vltava.Web
             {
                 try
                 {
+                    //Load the rss listed at opml subscription file 
                     var syndication = Option.None<List<ComplexSyndication>>();
                     (await RenderPipeline.OpmlReadingAsync(subscriptionListFile.ValueOrFailure())).MatchSome
                         (opmlXml => RenderPipeline.OpmlParsing(opmlXml).MatchSome(
@@ -55,6 +56,7 @@ namespace Vltava.Web
                         )
                     );
 
+                    //Read the template file and render the rss content
                     var output = Option.None<string>();
                     (await RenderPipeline.TemplateReadingAsync(opmlFile.ValueOrFailure())).MatchSome
                         (template => RenderPipeline.Render((template, syndication.ValueOrFailure())).MatchSome(
