@@ -117,7 +117,6 @@ namespace Vltava.Core.Protocols
                 var res = result.Result;
                 var resultContent = await res.Content.ReadAsStringAsync();
 
-                System.Console.WriteLine(resultContent);
                 using (var xmlReader = XmlReader.Create(new MemoryStream(Encoding.UTF8.GetBytes(resultContent))))
                 {
                     var feedReader = new RssFeedReader(xmlReader);
