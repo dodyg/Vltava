@@ -16,6 +16,7 @@ using Optional.Unsafe;
 using Vltava.Core.Features;
 using System.Threading.Tasks.Dataflow;
 using System.Threading.Tasks;
+using Optional.Linq;
 
 namespace Vltava.Web
 {
@@ -30,106 +31,47 @@ namespace Vltava.Web
         {
             var sysFolders = app.ApplicationServices.GetService<SystemFolders>();
 
-            var opmlReading = new TransformBlock<string, string>(async fileName =>
-                              {
-                                  System.Console.WriteLine("OPML READING");
+            var subscriptionListFile = sysFolders.SubscriptionsFile("tech.opml");
+            if (!subscriptionListFile.HasValue)
+                throw new ArgumentException($"{subscriptionListFile} does not exist");
 
-                                  var subscriptionListFile = sysFolders.SubscriptionsFile(fileName);
-                                  if (!subscriptionListFile.HasValue)
-                                      throw new ArgumentException($"{subscriptionListFile} does not exist");
-
-                                  var subscription = await File.ReadAllTextAsync(subscriptionListFile.ValueOrFailure());
-
-                                  return subscription;
-                              });
-
-            var opmlParsing = new TransformBlock<string, Opml>(subscription =>
-            {
-                var opml = Opml.Parse(subscription);
-
-                if (opml.IsFalse)
-                    throw opml.ExceptionObject;
-
-                return opml.Value;
-            });
-
-            var syndicationSourceUrls = new TransformBlock<Opml, List<Uri>>(opml =>
-            {
-                var outlines = opml.Find("type", "rss");
-                return outlines.Where(o => o.Attributes.ContainsKey("url")).Select(o => new Uri(o["url"])).ToList();
-            });
-
-            var syndications = new TransformBlock<List<Uri>, List<ComplexSyndication>>(async uris =>
-            {
-                System.Console.WriteLine("Syndication Processing");
-                
-                try
-                {
-                    uris.ForEach(x => System.Console.WriteLine($"{x}"));
-
-                    var items = await SyndicationReader.Get(uris.ToArray());
-                    return items;
-                }
-                catch (Exception ex)
-                {
-                    System.Console.WriteLine($"{ex.Message} {ex.StackTrace}");
-                    return new List<ComplexSyndication>();
-                }
-            });
-
-            //SyndicationReader.SyndicationItemStream.Subscribe(x => Console.WriteLine(x.Item.Title));
-
-            var template = new TransformBlock<string, string>(async filename =>
-            {
-                System.Console.WriteLine("Template Processing");
-                var templateFile = sysFolders.TemplateFile(filename);
-                if (!templateFile.HasValue)
-                    throw new ArgumentException($"{templateFile} does not exist");
-
-                var tmplt = await File.ReadAllTextAsync(templateFile.ValueOrFailure());
-                return tmplt;
-            });
-
-            var output = new TransformBlock<Tuple<string, List<ComplexSyndication>>, string>(input =>
-           {
-               System.Console.WriteLine("Rendering output");
-               var r = new HtmlRender();
-               return r.Render(input.Item1, input.Item2);
-           });
-
-            opmlReading.LinkTo(opmlParsing);
-            opmlParsing.LinkTo(syndicationSourceUrls);
-            syndicationSourceUrls.LinkTo(syndications);
-
-            var join = new JoinBlock<string, List<ComplexSyndication>>();
-            template.LinkTo(join.Target1);
-            syndications.LinkTo(join.Target2);
-            join.LinkTo(output);
-
+            var opmlFile = sysFolders.TemplateFile("default.scriban-html");
+            if (!opmlFile.HasValue)
+                throw new ArgumentException($"{opmlFile} does not exist");
 
             //These are the four default services available at Configure
             app.Run(async context =>
             {
                 try
                 {
-                    var render = new ActionBlock<string>(async input =>
-                    {
-                        System.Console.WriteLine("Writing to HTML");
-                        context.Response.Headers.Add("Content-Type", "text/html");
-                        await context.Response.WriteAsync("Good morning" + input);
-                    });
+                    var syndication = Option.None<List<ComplexSyndication>>();
+                    (await RenderPipeline.OpmlReadingAsync(subscriptionListFile.ValueOrFailure())).MatchSome
+                        (opmlXml => RenderPipeline.OpmlParsing(opmlXml).MatchSome(
+                            (opml => RenderPipeline.GetSyndicationUri(opml).MatchSome(
+                                (async uris => (await RenderPipeline.ProcessSyndicationAsync(uris)).MatchSome(
+                                    syndications => syndication = Option.Some(syndications)
+                                ))
+                            ))
+                        )
+                    );
 
-                    output.LinkTo(render);
+                    var output = Option.None<string>();
+                    (await RenderPipeline.TemplateReadingAsync(opmlFile.ValueOrFailure())).MatchSome
+                        (template => RenderPipeline.Render((template, syndication.ValueOrFailure())).MatchSome(
+                            o => output = Option.Some(o)
+                        )
+                    );
 
-                    template.Post("default.scriban-html");
-                    template.Complete();
-                    opmlReading.Post("tech.opml");
-                    opmlReading.Complete();
-
-                    await Task.WhenAll(template.Completion, syndications.Completion);
-                    join.Complete();
-                    output.Complete();
-                    await render.Completion;
+                    await output.Match(
+                        some : async doc => {
+                            context.Response.Headers.Add("Content-Type", "text/html");
+                            await context.Response.WriteAsync(doc);
+                        },
+                        none: async () => {
+                            context.Response.Headers.Add("Content-Type", "text/html");
+                            await context.Response.WriteAsync("Error");
+                        }
+                    );
                 }
                 catch (Exception ex)
                 {
