@@ -46,14 +46,18 @@ namespace Vltava.Web
                 {
                     //Load the rss listed at opml subscription file 
                     var syndication = Option.None<List<ComplexSyndication>>();
-                    (await RenderPipeline.OpmlReadingAsync(subscriptionListFile.ValueOrFailure())).MatchSome
-                        (opmlXml => RenderPipeline.OpmlParsing(opmlXml).MatchSome(
-                            (opml => RenderPipeline.GetSyndicationUri(opml).MatchSome(
-                                (async uris => (await RenderPipeline.ProcessSyndicationAsync(uris)).MatchSome(
-                                    syndications => syndication = Option.Some(syndications)
-                                ))
-                            ))
-                        )
+                    await (await RenderPipeline.OpmlReadingAsync(subscriptionListFile.ValueOrFailure())).Match(
+                        some : async opmlXml => await RenderPipeline.OpmlParsing(opmlXml).Match(
+                            some : async opml => await RenderPipeline.GetSyndicationUri(opml).Match(
+                                some : async uris => (await RenderPipeline.ProcessSyndicationAsync(uris)).Match(
+                                    some : syndications => syndication = Option.Some(syndications),
+                                    none: x => throw x
+                                ), 
+                                none: x => throw x
+                            ),
+                             none: x => throw x
+                        ),
+                        none: x => throw x
                     );
 
                     //Read the template file and render the rss content
