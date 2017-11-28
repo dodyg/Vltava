@@ -48,12 +48,12 @@ namespace Vltava.Web
                     var syndication = await (await RenderPipeline.OpmlReadingAsync(subscriptionListFile.ValueOrFailure())).Match(
                         some : async opmlXml => await RenderPipeline.OpmlParsing(opmlXml).Match(
                             some : async opml => await RenderPipeline.GetSyndicationUri(opml).Match(
-                                some : async uris => (await RenderPipeline.ProcessSyndicationAsync(uris)), 
-                                none: x => throw x
+                                some : async  uris => (await RenderPipeline.ProcessSyndicationAsync(uris)), 
+                                none:  x => Option.None<List<ComplexSyndication>, Exception>(x)
                             ),
-                             none: x => throw x
+                             none: x => Option.None<List<Uri>, Exception>(x)
                         ),
-                        none: x => throw x
+                        none: x => Option.None<string, Exception>(x)
                     );
 
                     //Read the template file and render the rss content
