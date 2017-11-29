@@ -17,6 +17,7 @@ using Vltava.Core.Features;
 using System.Threading.Tasks.Dataflow;
 using System.Threading.Tasks;
 using Optional.Linq;
+using System.Diagnostics;
 
 namespace Vltava.Web
 {
@@ -39,11 +40,14 @@ namespace Vltava.Web
             if (!opmlFile.HasValue)
                 throw new ArgumentException($"{opmlFile} does not exist");
 
+            var watch = new Stopwatch();
+
             //These are the four default services available at Configure
             app.Run(async context =>
             {
                 try
                 {
+                    watch.Start();
                     var uriList = (await RenderPipeline.OpmlReadingAsync(subscriptionListFile.ValueOrFailure())).Match(
                         some :  opmlXml =>  RenderPipeline.OpmlParsing(opmlXml).Match(
                             some :  opml => RenderPipeline.GetSyndicationUri(opml),
@@ -59,7 +63,14 @@ namespace Vltava.Web
 
                     //Read the template file and render the rss content
                     var output = (await RenderPipeline.TemplateReadingAsync(opmlFile.ValueOrFailure())).Match(
-                        some : template => RenderPipeline.Render((template, syndication.ValueOrFailure())),
+                        some : template => 
+                        {
+                            var props = new Dictionary<string, string>();
+                            watch.Stop();
+                            props["rendering_time"] = watch.ElapsedMilliseconds + " ms";
+
+                            return RenderPipeline.Render((template, syndication.ValueOrFailure(), props));
+                        },
                         none:  x => Option.None<string, Exception>(x)
                     );
 

@@ -86,12 +86,12 @@ namespace Vltava.Core.Features
             }
         }
 
-        public static Option<string, Exception> Render((string template, List<ComplexSyndication> syndications) input)
+        public static Option<string, Exception> Render((string template, List<ComplexSyndication> syndications, Dictionary<string, string> properties) input)
         {
             try
             {
                 var r = new HtmlRender();
-                var result = r.Render(input.template, input.syndications);
+                var result = r.Render(input.template, input.syndications, input.properties);
                 return Option.Some<string, Exception>(result);
             }
             catch (Exception ex)
