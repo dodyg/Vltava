@@ -32,13 +32,9 @@ namespace Vltava.Web
         {
             var sysFolders = app.ApplicationServices.GetService<SystemFolders>();
 
-            var subscriptionListFile = sysFolders.SubscriptionsFile("tech.opml");
-            if (!subscriptionListFile.HasValue)
-                throw new ArgumentException($"{subscriptionListFile} does not exist");
-
-            var opmlFile = sysFolders.TemplateFile("default.scriban-html");
-            if (!opmlFile.HasValue)
-                throw new ArgumentException($"{opmlFile} does not exist");
+            var renderingTemplate = sysFolders.TemplateFile("default.scriban-html");
+            if (!renderingTemplate.HasValue)
+                throw new ArgumentException($"{renderingTemplate} does not exist");
 
             var watch = new Stopwatch();
 
@@ -48,7 +44,25 @@ namespace Vltava.Web
                 try
                 {
                     watch.Start();
-                    var uriList = (await RenderPipeline.OpmlReadingAsync(subscriptionListFile.ValueOrFailure())).Match(
+
+                    Option<string, Exception> opmlContent;
+
+                    var remoteOpmlFile = context.Request.Query["opml"].FirstOrDefault();
+
+                    if (string.IsNullOrEmpty(remoteOpmlFile))
+                    {
+                        var subscriptionListFile = sysFolders.SubscriptionsFile("tech.opml");
+                        if (!subscriptionListFile.HasValue)
+                            throw new ArgumentException($"{subscriptionListFile} does not exist");
+
+                        opmlContent = await RenderPipeline.OpmlReadingAsync(subscriptionListFile.ValueOrFailure());
+                    }
+                    else
+                    {
+                        opmlContent = await RenderPipeline.OpmlReadingAsync(new Uri(remoteOpmlFile));
+                    }
+
+                    var uriList = opmlContent.Match(
                         some :  opmlXml =>  RenderPipeline.OpmlParsing(opmlXml).Match(
                             some :  opml => RenderPipeline.GetSyndicationUri(opml),
                             none: x => Option.None<List<Uri>, Exception>(x)
@@ -62,16 +76,23 @@ namespace Vltava.Web
                     );
 
                     //Read the template file and render the rss content
-                    var output = (await RenderPipeline.TemplateReadingAsync(opmlFile.ValueOrFailure())).Match(
-                        some : template => 
-                        {
-                            var props = new Dictionary<string, string>();
-                            watch.Stop();
-                            props["rendering_time"] = watch.ElapsedMilliseconds + " ms";
+                    var output = await syndication.Match(
+                        some : async syndicationList => {
+                            var readTemplated = await RenderPipeline.TemplateReadingAsync(renderingTemplate.ValueOrFailure());
+                            var match = readTemplated.Match(
+                                some : template => 
+                                {
+                                    var props = new Dictionary<string, string>();
+                                    watch.Stop();
+                                    props["rendering_time"] = watch.ElapsedMilliseconds + " ms";
 
-                            return RenderPipeline.Render((template, syndication.ValueOrFailure(), props));
+                                    return RenderPipeline.Render((template, syndicationList, props));
+                                },
+                                none:  x => Option.None<string, Exception>(x)
+                            );
+                            return match;
                         },
-                        none:  x => Option.None<string, Exception>(x)
+                        none: x => Task.FromResult(Option.None<string, Exception>(x))
                     );
 
                     await output.Match(

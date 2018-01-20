@@ -7,6 +7,7 @@ using System.IO;
 using Vltava.Core.Protocols;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Http;
 
 namespace Vltava.Core.Features
 {
@@ -23,6 +24,24 @@ namespace Vltava.Core.Features
             catch (Exception ex)
             {
                 return Option.None<string, Exception>(ex);
+            }
+        }
+
+        public static async Task<Option<string, Exception>> OpmlReadingAsync(Uri url)
+        {
+            using(var client = new HttpClient())
+            {
+                try
+                {
+                    var data = await client.GetStringAsync(url);
+
+                    return Option.Some<string, Exception>(data);
+                }
+                catch (Exception ex)
+                {
+                    var exceptionInfo = new Exception($"{url} {ex.Message}");
+                    return Option.None<string, Exception>(exceptionInfo);
+                }
             }
         }
 
@@ -49,6 +68,12 @@ namespace Vltava.Core.Features
             {
                 var outlines = opml.Find("type", "rss");
                 var uriList = outlines.Where(o => o.Attributes.ContainsKey("url")).Select(o => new Uri(o["url"])).ToList();
+
+                if (uriList.Count == 0)
+                    uriList = outlines.Where(o => o.Attributes.ContainsKey("xmlUrl")).Select(o => new Uri(o["xmlUrl"])).ToList();
+
+                if (uriList.Count > 10)
+                    uriList = uriList.Take(10).ToList();
 
                 return Option.Some<List<Uri>, Exception>(uriList);
             }
