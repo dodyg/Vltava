@@ -1,11 +1,8 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 15
-VisualStudioVersion = 15.0.26730.8
-MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Vltava.Web", "Vltava.Web.csproj", "{545FEDB6-8737-4B5D-B94A-57F317AE7D3E}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Vltava.Web", "Vltava.Web\Vltava.Web.csproj", "{545FEDB6-8737-4B5D-B94A-57F317AE7D3E}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Vltava.Core", "..\Vltava.Core\Vltava.Core.csproj", "{B713478B-2E21-4D9F-9D1F-CCE059A4ACA3}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Vltava.Core", "Vltava.Core\Vltava.Core.csproj", "{B713478B-2E21-4D9F-9D1F-CCE059A4ACA3}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
