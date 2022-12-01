@@ -7,3 +7,5 @@ project.lock.json
 *.suo
 *.cache
 *.docstates
+
+.vs/
